@@ -19,7 +19,6 @@ class Debouncer:
         FALL = auto()
         RISE = auto()
 
-
     def __init__(self, pin, initial_stable_value, stable_time=2000000):
         self.__pin = pin
         self.__stable_time = stable_time
@@ -52,7 +51,7 @@ class Debouncer:
             # Make sure rise() only returns True once
             self.__fall_rise_state = self.FallRiseState.UNCHANGED
             return True
-        
+
         return False
 
     def fall(self):
@@ -60,7 +59,7 @@ class Debouncer:
             # Make sure fall() only returns True once
             self.__fall_rise_state = self.FallRiseState.UNCHANGED
             return True
-        
+
         return False
 
 
@@ -70,7 +69,7 @@ class MorseDecoder:
         self.debouncer = Debouncer(PIN_BTN, GPIO.PUD_UP)
         self.__max_deviance_ms = 100
 
-    def decoding_loop(self):
+    def run_decoding_loop(self):
         while True:
             self.debouncer.update()
             if self.debouncer.rise():
@@ -87,7 +86,7 @@ def main():
     GPIO.setup(PIN_BTN, GPIO.IN, GPIO.PUD_UP)
 
     decoder = MorseDecoder()
-    decoder.decoding_loop()
+    decoder.run_decoding_loop()
 
 
 if __name__ == '__main__':
