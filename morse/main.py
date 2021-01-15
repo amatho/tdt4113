@@ -1,6 +1,7 @@
 from GPIOSimulator_v1 import GPIOSimulator, PIN_BLUE_LED, PIN_BTN, PIN_RED_LED_0, PIN_RED_LED_1, PIN_RED_LED_2
 import time
 import keyboard
+from enum import Enum, auto
 
 GPIO = GPIOSimulator()
 
@@ -13,13 +14,18 @@ MORSE_CODE = {'.-': 'a', '-...': 'b', '-.-.': 'c', '-..': 'd', '.': 'e', '..-.':
 
 
 class Debouncer:
+    class FallRiseState(Enum):
+        UNCHANGED = auto()
+        FALL = auto()
+        RISE = auto()
+
+
     def __init__(self, pin, initial_stable_value, stable_time=2000000):
         self.__pin = pin
         self.__stable_time = stable_time
         self.value = initial_stable_value
         self.__last_state = initial_stable_value
-        # -1 is unchanged, 0 is fall, 1 is rise
-        self.__fall_rise_state = -1
+        self.__fall_rise_state = self.FallRiseState.UNCHANGED
         self.__time_changed = time.monotonic_ns()
 
     def update(self):
@@ -30,11 +36,11 @@ class Debouncer:
             self.__last_stable_value = self.value
             self.value = state
             if self.__last_stable_value is GPIO.LOW and self.value is GPIO.HIGH:
-                self.__fall_rise_state = 1
+                self.__fall_rise_state = self.FallRiseState.RISE
             elif self.__last_stable_value is GPIO.HIGH and self.value is GPIO.LOW:
-                self.__fall_rise_state = 0
+                self.__fall_rise_state = self.FallRiseState.FALL
             else:
-                self.__fall_rise_state = -1
+                self.__fall_rise_state = self.FallRiseState.UNCHANGED
         elif state is not self.__last_state:
             # State changed since last update
             self.__time_changed = time_now
@@ -42,15 +48,17 @@ class Debouncer:
         self.__last_state = state
 
     def rise(self):
-        if self.__fall_rise_state == 1:
-            self.__fall_rise_state = -1
+        if self.__fall_rise_state == self.FallRiseState.RISE:
+            # Make sure rise() only returns True once
+            self.__fall_rise_state = self.FallRiseState.UNCHANGED
             return True
         
         return False
 
     def fall(self):
-        if self.__fall_rise_state == 0:
-            self.__fall_rise_state = -1
+        if self.__fall_rise_state == self.FallRiseState.FALL:
+            # Make sure fall() only returns True once
+            self.__fall_rise_state = self.FallRiseState.UNCHANGED
             return True
         
         return False
