@@ -1,1 +1,6 @@
-**/__pycache__/
+__pycache__/
+*.pyc
+# VS Code has platform specific config
+.vscode/
+# Pipfile.lock has platform specific data
+Pipfile.lock
