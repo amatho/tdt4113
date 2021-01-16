@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-keyboard = "*"
+keyboard = "~=0.13"
 
 [dev-packages]
 pylint = "*"
