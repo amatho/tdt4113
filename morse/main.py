@@ -13,6 +13,14 @@ MORSE_CODE = {'.-': 'a', '-...': 'b', '-.-.': 'c', '-..': 'd', '.': 'e', '..-.':
               '---..': '8', '----.': '9', '-----': '0'}
 
 
+def print_status(s):
+    print(s.ljust(50), end='\r')
+
+
+def print_line(s):
+    print(s.ljust(50))
+
+
 class Debouncer:
     class FallRiseState(Enum):
         UNCHANGED = auto()
@@ -97,17 +105,18 @@ class MorseDecoder:
 
     def read_one_signal(self):
         signal = None
+        time_now = time.monotonic_ns()
 
         if self.debouncer.rise():
-            self.__last_rise = time.monotonic_ns()
-            elapsed_ms = (self.__last_rise - self.__last_fall) / 1000000
+            self.__last_rise = time_now
+            elapsed_ms = (self.__last_rise - self.__last_fall) // 1000000
 
             if self.pause_in_interval(elapsed_ms, 3):
                 signal = self.Signal.MEDIUM_PAUSE
-                print('Pause duration: ' + str(elapsed_ms))
+
         elif self.debouncer.fall():
-            self.__last_fall = time.monotonic_ns()
-            elapsed_ms = (self.__last_fall - self.__last_rise) / 1000000
+            self.__last_fall = time_now
+            elapsed_ms = (self.__last_fall - self.__last_rise) // 1000000
 
             if self.input_in_interval(elapsed_ms):
                 signal = self.Signal.DOT
@@ -116,16 +125,19 @@ class MorseDecoder:
             elif self.too_long_is_dash and elapsed_ms > (self.interval * 3):
                 signal = self.Signal.DASH
             else:
-                print('Unrecognized')
+                print_line('The input was neither a dot or dash')
 
-            print('Elapsed: ' + str(elapsed_ms))
         elif self.__last_fall > self.__last_rise:
-            elapsed_ms = (time.monotonic_ns() - self.__last_fall) / 1000000
+            elapsed_ms = (time_now - self.__last_fall) // 1000000
+            print_status('Pause duration: ' + str(elapsed_ms))
 
-            if elapsed_ms >= (self.interval * 7 - self.max_pause_deviation):
+            if elapsed_ms >= (self.interval * 7):
                 signal = self.Signal.LONG_PAUSE
                 self.__last_rise = 0
                 self.__last_fall = 0
+        elif self.__last_rise > self.__last_fall:
+            elapsed_ms = (time_now - self.__last_rise) // 1000000
+            print_status('Input duration: ' + str(elapsed_ms))
 
         return signal
 
@@ -152,7 +164,7 @@ class MorseDecoder:
 
     def handle_word_end(self):
         self.handle_symbol_end()
-        print(self.current_word)
+        print_line(self.current_word)
         self.current_word = ''
 
     def run_decoding_loop(self):
