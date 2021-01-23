@@ -151,7 +151,7 @@ class MorseDecoder:
             self.__last_rise = time_now
             elapsed_ms = (self.__last_rise - self.__last_fall) // 1000000
 
-            if self.pause_in_interval(elapsed_ms, 3):
+            if self.__last_fall != 0 and elapsed_ms >= (self.interval * 3) - self.max_pause_deviation:
                 signal = self.Signal.MEDIUM_PAUSE
 
         elif self.debouncer.fall():
