@@ -30,7 +30,7 @@ class Cipher(ABC):
 
     @staticmethod
     @abstractmethod
-    def gen_key_pair(key=None):
+    def gen_key_pair(encoding_key=None):
         """Generate a key pair, where first is for encoding and second is for decoding."""
         pass
 
@@ -49,10 +49,10 @@ class Caesar(Cipher):
         return cls.encode(key, encoded_text)
 
     @staticmethod
-    def gen_key_pair(key=None):
-        if key is None:
-            key = random.randint(1, 94)
-        return (key, 95 - key)
+    def gen_key_pair(encoding_key=None):
+        if encoding_key is None:
+            encoding_key = random.randint(1, 94)
+        return (encoding_key, 95 - encoding_key)
 
 
 class Multiplicative(Cipher):
@@ -69,11 +69,32 @@ class Multiplicative(Cipher):
         return cls.encode(key, encoded_text)
 
     @staticmethod
-    def gen_key_pair(key=None):
-        if key is None:
-            key = random.randint(2, 94)
-        key_inverse = crypto_utils.modular_inverse(key, 95)
-        return (key, key_inverse)
+    def gen_key_pair(encoding_key=None):
+        if encoding_key is None:
+            encoding_key = random.randint(2, 94)
+        key_inverse = crypto_utils.modular_inverse(encoding_key, 95)
+        return (encoding_key, key_inverse)
+
+
+class Affine(Cipher):
+    @staticmethod
+    def encode(key, clear_text):
+        return Caesar.encode(key[1], Multiplicative.encode(key[0], clear_text))
+    
+    @staticmethod
+    def decode(key, encoded_text):
+        return Multiplicative.decode(key[0], Caesar.decode(key[1], encoded_text))
+
+    @staticmethod
+    def gen_key_pair(encoding_key=None):
+        if encoding_key is None:
+            mult_keys = Multiplicative.gen_key_pair()
+            caesar_keys = Caesar.gen_key_pair()
+            return ((mult_keys[0], caesar_keys[0]), (mult_keys[1], caesar_keys[1]))
+
+        decode_key = (crypto_utils.modular_inverse(
+            encoding_key[0], 95), 95 - encoding_key[1])
+        return (encoding_key, decode_key)
 
 
 class Person:
@@ -111,8 +132,8 @@ class Receiver(Person):
 def main():
     """The main method."""
 
-    (enc_key, dec_key) = Multiplicative.gen_key_pair(3)
-    Multiplicative.verify(enc_key, dec_key, "yeet skeet")
+    (enc_key, dec_key) = Affine.gen_key_pair((3, 2))
+    Affine.verify(enc_key, dec_key, "yeet skeet")
 
 
 if __name__ == "__main__":
