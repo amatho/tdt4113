@@ -1,4 +1,6 @@
 import random
+import crypto_utils
+from abc import ABC, abstractmethod
 
 
 def ascii_value(character):
@@ -9,14 +11,16 @@ def from_ascii_value(value):
     return chr(value + 32)
 
 
-class Cipher:
+class Cipher(ABC):
     @staticmethod
+    @abstractmethod
     def encode(key, clear_text):
-        raise NotImplementedError
+        pass
 
     @staticmethod
+    @abstractmethod
     def decode(key, encoded_text):
-        raise NotImplementedError
+        pass
 
     @classmethod
     def verify(cls, encoding_key, decoding_key, clear_text):
@@ -25,9 +29,10 @@ class Cipher:
         assert clear_text == decoded
 
     @staticmethod
-    def gen_key_pair():
+    @abstractmethod
+    def gen_key_pair(key=None):
         """Generate a key pair, where first is for encoding and second is for decoding."""
-        raise NotImplementedError
+        pass
 
 
 class Caesar(Cipher):
@@ -38,17 +43,37 @@ class Caesar(Cipher):
             result += from_ascii_value((ascii_value(c) + key) % 95)
         return result
 
-    @staticmethod
-    def decode(key, encoded_text):
-        result = ''
-        for c in encoded_text:
-            result += from_ascii_value((ascii_value(c) + key) % 95)
-        return result
+    @classmethod
+    def decode(cls, key, encoded_text):
+        # Encoding and decoding is the same, but with differing keys
+        return cls.encode(key, encoded_text)
 
     @staticmethod
-    def gen_key_pair():
-        key = random.randint(0, 94)
+    def gen_key_pair(key=None):
+        if key is None:
+            key = random.randint(1, 94)
         return (key, 95 - key)
+
+
+class Multiplicative(Cipher):
+    @staticmethod
+    def encode(key, clear_text):
+        result = ''
+        for c in clear_text:
+            result += from_ascii_value((ascii_value(c) * key) % 95)
+        return result
+
+    @classmethod
+    def decode(cls, key, encoded_text):
+        # Encoding and decoding is the same, but with differing keys
+        return cls.encode(key, encoded_text)
+
+    @staticmethod
+    def gen_key_pair(key=None):
+        if key is None:
+            key = random.randint(2, 94)
+        key_inverse = crypto_utils.modular_inverse(key, 95)
+        return (key, key_inverse)
 
 
 class Person:
@@ -86,8 +111,8 @@ class Receiver(Person):
 def main():
     """The main method."""
 
-    (enc_key, dec_key) = Caesar.gen_key_pair()
-    Caesar.verify(enc_key, dec_key, "yeet skeet")
+    (enc_key, dec_key) = Multiplicative.gen_key_pair(3)
+    Multiplicative.verify(enc_key, dec_key, "yeet skeet")
 
 
 if __name__ == "__main__":
