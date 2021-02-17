@@ -87,7 +87,7 @@ class Function:
     def __init__(self, func: Callable) -> None:
         self.func = func
 
-    def execute(self, element: numbers.Number, debug=True) -> numbers.Number:
+    def execute(self, element: numbers.Number, debug=False) -> numbers.Number:
         """Execute the function on the given element and return the result."""
 
         if not isinstance(element, numbers.Number):
